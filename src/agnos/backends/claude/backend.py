@@ -160,8 +160,10 @@ class ClaudeBackend:
     def __init__(self, options: AgentOptions) -> None:
         if options.reasoning_effort is not None or options.reasoning_summary is not None:
             _LOGGER.warning(
-                "Ignoring `reasoning_effort`/`reasoning_summary`: these options are only supported with the OpenAI backend."
+                "Ignoring `reasoning_effort`/`reasoning_summary`: "
+                "these options are only supported with the OpenAI backend."
             )
+
         allowed_tools, disallowed_tools = options.effective_tool_lists()
         permission_mode = options.claude_permission_mode()
         hooks = _make_pre_tool_use_hooks(options)

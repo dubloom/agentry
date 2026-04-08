@@ -14,11 +14,11 @@ from agents.items import ReasoningItem
 from agents.items import RunItem
 from agents.items import ToolCallItem
 from agents.items import ToolCallOutputItem
+from agents.model_settings import ModelSettings
+from agents.model_settings import Reasoning
 from agents.result import RunResultStreaming
 from agents.run import DEFAULT_MAX_TURNS
 from agents.usage import serialize_usage
-from agents.model_settings import ModelSettings
-from agents.model_settings import Reasoning
 
 from agnos.messages import AgentEvent
 from agnos.messages import AgentQueryCompleted

@@ -12,6 +12,7 @@ from agnos.backends.openai.tools.grep import make_grep_files_tool
 from agnos.backends.openai.tools.read import make_read_file_tool
 from agnos.options import CLAUDE_TO_OPENAI_BUILTIN
 
+
 _UNSUPPORTED_ON_OPENAI = frozenset({"Task"})
 
 # Stable order for the OpenAI Agent ``tools=`` list.
