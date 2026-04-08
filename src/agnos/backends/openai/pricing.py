@@ -25,6 +25,7 @@ _OPENAI_PRICING_BY_PREFIX: dict[str, OpenAIModelPricing] = {
     "gpt-5.4-mini": OpenAIModelPricing(0.75, 4.50, 0.075),
     "gpt-5.4-nano": OpenAIModelPricing(0.20, 1.25, 0.02),
     "gpt-5.4": OpenAIModelPricing(2.50, 15.00, 0.25),
+    "gpt-5.1-codex-mini": OpenAIModelPricing(0.25, 0.025, 2.00),
     "gpt-5.2-pro": OpenAIModelPricing(21.00, 168.00, None),
     "gpt-5.2": OpenAIModelPricing(1.75, 14.00, 0.175),
     "gpt-5-pro": OpenAIModelPricing(15.00, 120.00, None),
@@ -86,6 +87,9 @@ def _as_int(value: Any, default: int = 0) -> int:
 def _cached_input_tokens(usage: dict[str, Any] | None) -> int:
     if not usage:
         return 0
+    normalized_value = usage.get("cached_input_tokens")
+    if normalized_value is not None:
+        return _as_int(normalized_value, default=0)
     details = usage.get("input_tokens_details")
     if isinstance(details, list) and details:
         details = details[0]

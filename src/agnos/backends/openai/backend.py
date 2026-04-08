@@ -25,6 +25,7 @@ from agnos.messages import AgentThinking
 from agnos.messages import AgentToolCall
 from agnos.messages import AgentToolResult
 from agnos.options import AgentOptions
+from agnos.usage import normalize_usage
 
 from .pricing import estimate_openai_total_cost_usd
 from .tools import make_openai_builtin_tools
@@ -114,26 +115,29 @@ def _merge_openai_instructions(options: AgentOptions, tools_enabled: bool) -> st
     return extra
 
 
-def _openai_cost_extra(model: str, usage: dict[str, Any] | None) -> dict[str, Any]:
-    total = estimate_openai_total_cost_usd(model=model, usage=usage)
-    if total is None:
-        return {}
-    return {"total_cost_usd": total}
+def _openai_stop_reason(context_wrapper: Any) -> str:
+    """Best-effort stop reason for OpenAI runs."""
+    for attr_name in ("stop_reason", "finish_reason", "status"):
+        value = getattr(context_wrapper, attr_name, None)
+        if isinstance(value, str) and value:
+            return value
+    return "completed"
 
 
 def _openai_success_completion(model: str, context_wrapper: Any, final_output: Any) -> AgentQueryCompleted:
     """``AgentQueryCompleted`` for a finished OpenAI Agents run (``Runner.run`` or streamed run)."""
     try:
-        usage_dict = serialize_usage(context_wrapper.usage)
+        raw_usage = serialize_usage(context_wrapper.usage)
     except Exception:
-        usage_dict = None
+        raw_usage = None
+    usage_dict = normalize_usage("openai", raw_usage)
     final_message: str | None = final_output if isinstance(final_output, str) else None
     return AgentQueryCompleted(
         is_error=False,
-        stop_reason=None,
+        stop_reason=_openai_stop_reason(context_wrapper),
         message=final_message,
         usage=usage_dict,
-        extra=_openai_cost_extra(model, usage_dict),
+        total_cost_usd=estimate_openai_total_cost_usd(model=model, usage=usage_dict),
     )
 
 
@@ -218,6 +222,15 @@ class OpenAIBackend:
             )
         )
 
+    async def query_streamed(
+        self,
+        prompt: str | AsyncIterable[dict[str, Any]],
+        session_id: str = "default",
+    ) -> AsyncIterator[AgentEvent]:
+        await self.query(prompt, session_id=session_id)
+        async for event in self.receive_response():
+            yield event
+
     async def query_and_receive_response(
         self,
         prompt: str | AsyncIterable[dict[str, Any]],
@@ -253,15 +266,6 @@ class OpenAIBackend:
 
         events.append(_openai_success_completion(self._model, result.context_wrapper, result.final_output))
         return events
-
-    async def query_streamed(
-        self,
-        prompt: str | AsyncIterable[dict[str, Any]],
-        session_id: str = "default",
-    ) -> AsyncIterator[AgentEvent]:
-        await self.query(prompt, session_id=session_id)
-        async for event in self.receive_response():
-            yield event
 
     async def receive_messages(self) -> AsyncIterator[AgentEvent]:
         if not self._connected:

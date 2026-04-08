@@ -29,8 +29,9 @@ class AgentQueryCompleted:
     stop_reason: str | None = None
     message: str | None = None
     usage: dict[str, Any] | None = None
+    total_cost_usd: float | None = None
     extra: dict[str, Any] = field(default_factory=dict)
-    """Vendor-specific fields (e.g. ``duration_ms``, ``total_cost_usd``) for debugging."""
+    """Vendor-specific fields (e.g. ``duration_ms``) for debugging."""
 
 
 @dataclass

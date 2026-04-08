@@ -24,6 +24,7 @@ from agnos.messages import AgentThinking
 from agnos.messages import AgentToolCall
 from agnos.messages import AgentToolResult
 from agnos.options import AgentOptions
+from agnos.usage import normalize_usage
 
 
 _EDIT_TOOLS = frozenset({"write", "edit", "multiedit"})
@@ -131,13 +132,12 @@ def _claude_result_completion(msg: ClaudeResultMessage) -> AgentQueryCompleted:
     extra: dict[str, Any] = {}
     if msg.duration_ms is not None:
         extra["duration_ms"] = msg.duration_ms
-    if msg.total_cost_usd is not None:
-        extra["total_cost_usd"] = msg.total_cost_usd
     return AgentQueryCompleted(
         is_error=msg.is_error,
         stop_reason=msg.stop_reason,
         message=msg.result,
-        usage=msg.usage,
+        usage=normalize_usage("claude", msg.usage),
+        total_cost_usd=msg.total_cost_usd,
         extra=extra,
     )
 
@@ -205,6 +205,15 @@ class ClaudeBackend:
             raise RuntimeError("Backend is not connected; use `async with Client(...)` first.")
         await self._client.query(prompt, session_id=session_id)
 
+    async def query_streamed(
+        self,
+        prompt: str | AsyncIterable[dict[str, Any]],
+        session_id: str = "default",
+    ) -> AsyncIterator[AgentEvent]:
+        await self.query(prompt, session_id=session_id)
+        async for event in self.receive_response():
+            yield event
+
     async def query_and_receive_response(
         self,
         prompt: str | AsyncIterable[dict[str, Any]],
@@ -225,15 +234,6 @@ class ClaudeBackend:
         except Exception as exc:
             events.append(_claude_receive_error_completed(exc))
         return events
-
-    async def query_streamed(
-        self,
-        prompt: str | AsyncIterable[dict[str, Any]],
-        session_id: str = "default",
-    ) -> AsyncIterator[AgentEvent]:
-        await self.query(prompt, session_id=session_id)
-        async for event in self.receive_response():
-            yield event
 
     async def receive_messages(self) -> AsyncIterator[AgentEvent]:
         if not self._connected:
