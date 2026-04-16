@@ -5,6 +5,8 @@ Minimal vendor-agnostic async SDK that normalizes Claude Agent SDK and OpenAI Ag
 ## Install
 
 ```bash
+pip install agnos-agents
+# or for local development
 pip install -e .
 ```
 
