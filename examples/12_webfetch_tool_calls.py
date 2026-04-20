@@ -21,7 +21,7 @@ def _format_value(value: Any) -> str:
 
 
 async def main() -> None:
-    target_url = os.getenv("AGNOS_FETCH_URL", "https://www.python.org/")
+    target_url = os.getenv("GLYPH_FETCH_URL", "https://www.python.org/")
     options = AgentOptions(
         model=os.getenv("GLYPH_MODEL", "claude-sonnet-4-5"),
         allowed_tools=("WebFetch",),

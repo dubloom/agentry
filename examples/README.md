@@ -1,4 +1,4 @@
-# Agnos Examples
+# Glyph Examples
 
 Run examples from the repository root:
 
@@ -22,3 +22,6 @@ Set your model with `GLYPH_MODEL`. If not provided, each example uses a sensible
 - `10_claude_async_prompt_iterable.py`: Claude-style async iterable prompt input
 - `11_websearch_tool_calls.py`: WebSearch-enabled prompt with explicit tool call/result logging
 - `12_webfetch_tool_calls.py`: fetch a specific URL via WebFetch and print tool calls/results
+- `13_basic_workflow.py`: basic workflow with class-level `run(...)` and default `AgentOptions`
+- `14_workflow_context.py`: workflow context across steps with per-step model override using class-level `run(...)`
+- `15_workflow_init_override.py`: override class-level workflow options and pass first-step input with `initial_input=...`

@@ -175,6 +175,7 @@ class ClaudeBackend:
         claude_opts = ClaudeAgentOptions(**claude_kw)
         self._client = ClaudeSDKClient(options=claude_opts)
         self._connected = False
+        self._options = options
 
     async def connect(self) -> None:
         if self._connected:
@@ -187,6 +188,15 @@ class ClaudeBackend:
             return
         await self._client.__aexit__(None, None, None)
         self._connected = False
+
+    async def set_model(self, model: str) -> None:
+        """Hot-switch model on the active Claude session."""
+        if not self._connected:
+            raise RuntimeError("Backend is not connected; use `async with Client(...)` first.")
+        stripped_model = model.strip()
+        if not stripped_model:
+            raise ValueError("model must be a non-empty string.")
+        await self._client.set_model(stripped_model)
 
     async def query(
         self,

@@ -4,12 +4,13 @@ import os
 from pathlib import Path
 from typing import Any
 
-from glyph import AgentOptions, PermissionPolicy
+from glyph import AgentOptions
 from glyph import AgentQueryCompleted
 from glyph import AgentText
 from glyph import AgentToolCall
 from glyph import AgentToolResult
 from glyph import GlyphClient
+from glyph import PermissionPolicy
 
 
 def _format_value(value: Any) -> str:

@@ -159,6 +159,48 @@ If inference fails, `resolve_backend` raises `ValueError`.
 - Claude backend accepts `str` or async iterable prompt blocks (Claude-compatible content blocks).
 - OpenAI backend currently supports `str` prompts only.
 
+## Workflows
+
+`GlyphWorkflow` lets you compose multi-step flows where each step receives the previous step result.
+Define workflow steps with `@step`, and run the class with `MyWorkflow.run(...)`.
+
+```python
+import asyncio
+import os
+
+from glyph import AgentOptions, AgentQueryCompleted, GlyphWorkflow, step
+
+
+class MyWorkflow(GlyphWorkflow):
+    options = AgentOptions(model=os.getenv("GLYPH_MODEL", "gpt-4.1-mini"))
+
+    @step
+    async def load_topic(self) -> str:
+        return "sea turtles"
+
+    @step(prompt="Write one short sentence about {topic}.")
+    async def ask_model(self, topic: str) -> None:
+        self.fill_prompt(topic=topic)
+        result: AgentQueryCompleted = yield
+        print(result.message)
+
+
+async def main() -> None:
+    await MyWorkflow.run()
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+Workflow notes:
+
+- `@step` marks a normal Python step.
+- `@step(prompt=..., model=...)` marks an LLM step; `model` can override the default model for that step.
+- In LLM steps, use `yield` to execute the query, then optionally process `AgentQueryCompleted` after the yield.
+- Use `self.fill_prompt(...)` to render prompt templates safely while preserving missing placeholders.
+- `GlyphWorkflow.run(options=..., initial_input=..., session_id=...)` supports runtime overrides and first-step input injection.
+
 ## Examples
 
 Run from repository root:
@@ -175,5 +217,8 @@ python examples/08_openai_reasoning.py
 python examples/09_resolve_backend.py
 python examples/10_claude_async_prompt_iterable.py
 python examples/11_websearch_tool_calls.py
-python examples/12_claude_webfetch_tool_calls.py
+python examples/12_webfetch_tool_calls.py
+python examples/13_basic_workflow.py
+python examples/14_workflow_context.py
+python examples/15_workflow_init_override.py
 ```

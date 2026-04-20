@@ -2,10 +2,11 @@ import asyncio
 import os
 from pathlib import Path
 
-from glyph import AgentOptions, AgentToolResult
+from glyph import AgentOptions
 from glyph import AgentQueryCompleted
 from glyph import AgentText
 from glyph import AgentToolCall
+from glyph import AgentToolResult
 from glyph import GlyphClient
 from glyph import PermissionPolicy
 

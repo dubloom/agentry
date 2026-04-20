@@ -13,6 +13,9 @@ from glyph.options import ApprovalRequest
 from glyph.options import PermissionPolicy
 from glyph.options import resolve_backend
 from glyph.query import query
+from glyph.workflow import GlyphWorkflow
+from glyph.workflow import fill_prompt
+from glyph.workflow import step
 
 
 __all__ = [
@@ -29,4 +32,7 @@ __all__ = [
     "PermissionPolicy",
     "query",
     "resolve_backend",
+    "GlyphWorkflow",
+    "step",
+    "fill_prompt",
 ]

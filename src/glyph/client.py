@@ -1,5 +1,6 @@
 from collections.abc import AsyncIterable
 from collections.abc import AsyncIterator
+from dataclasses import replace
 from typing import Any
 
 from glyph.backends.claude import ClaudeBackend
@@ -20,6 +21,38 @@ class GlyphClient:
             self._backend = ClaudeBackend(options)
         else:
             self._backend = OpenAIBackend(options)
+        self._options = options
+
+    async def set_model(self, model: str) -> None:
+        """Switch to another model on the same provider."""
+        stripped_model = model.strip()
+        if not stripped_model:
+            raise ValueError("model must be a non-empty string.")
+
+        if stripped_model == self._options.model:
+            return
+
+        next_options = replace(self._options, model=stripped_model)
+        next_backend_name = resolve_backend(next_options)
+        if next_backend_name != self.backend_name:
+            raise ValueError(
+                f"Cannot switch backend from {self.backend_name!r} to {next_backend_name!r}; "
+                "create a separate GlyphClient for the other provider."
+            )
+
+        if self.backend_name == "claude":
+            await self._backend.set_model(stripped_model)
+        else:
+            old_backend = self._backend
+            self._backend = OpenAIBackend(next_options)
+            self._backend._sessions = old_backend._sessions
+            await self._backend.connect()
+
+        self._options = next_options
+
+    @property
+    def options(self) -> AgentOptions:
+        return self._options
 
     async def __aenter__(self) -> "GlyphClient":
         await self._backend.connect()
