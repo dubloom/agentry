@@ -25,3 +25,4 @@ Set your model with `GLYPH_MODEL`. If not provided, each example uses a sensible
 - `13_basic_workflow.py`: basic workflow with class-level `run(...)` and default `AgentOptions`
 - `14_workflow_context.py`: workflow context across steps with per-step model override using class-level `run(...)`
 - `15_workflow_init_override.py`: override class-level workflow options and pass first-step input with `initial_input=...`
+- `16_workflow_streaming.py`: LLM step with `is_streaming=True` to stream `AgentText` and other events before `AgentQueryCompleted`

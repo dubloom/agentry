@@ -222,4 +222,5 @@ python examples/12_webfetch_tool_calls.py
 python examples/13_basic_workflow.py
 python examples/14_workflow_context.py
 python examples/15_workflow_init_override.py
+python examples/16_workflow_streaming.py
 ```

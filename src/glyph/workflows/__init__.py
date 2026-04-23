@@ -185,6 +185,9 @@ class GlyphWorkflow:
         self.prompt = prompt
         func_to_exec = descriptor.func.__get__(self, type(self))
 
+        if descriptor.is_streaming and not inspect.isasyncgenfunction(descriptor.func):
+            raise TypeError("Streaming LLM steps must be async generators so they can receive events.")
+
         if inspect.isasyncgenfunction(descriptor.func):
             return await self._run_llm_generator_step(
                 func_to_exec=func_to_exec,
@@ -192,6 +195,7 @@ class GlyphWorkflow:
                 session_id=session_id,
                 shared_client=shared_client,
                 step_model=descriptor.model,
+                is_streaming=descriptor.is_streaming,
             )
 
         await self._call_step(func_to_exec, previous_result)
@@ -217,21 +221,45 @@ class GlyphWorkflow:
         shared_client: GlyphClient,
         step_model: str | None,
     ) -> AgentQueryCompleted:
-        events: list[AgentEvent]
-        if step_model is None or step_model == self.default_options.model:
-            events = await shared_client.query_and_receive_response(prompt, session_id=session_id)
-        else:
-            original_model = shared_client.options.model
-            await shared_client.set_model(step_model)
-            try:
-                events = await shared_client.query_and_receive_response(prompt, session_id=session_id)
-            finally:
-                await shared_client.set_model(original_model)
+        events = [event async for event in self._iter_llm_events(
+            prompt=prompt,
+            session_id=session_id,
+            shared_client=shared_client,
+            step_model=step_model,
+            is_streaming=False,
+        )]
 
         for event in reversed(events):
             if isinstance(event, AgentQueryCompleted):
                 return event
         raise RuntimeError("LLM step did not receive AgentQueryCompleted.")
+
+    async def _iter_llm_events(
+        self,
+        *,
+        prompt: str,
+        session_id: str,
+        shared_client: GlyphClient,
+        step_model: str | None,
+        is_streaming: bool,
+    ):
+        # update model just for that step if the step is overriding it
+        original_model: str | None = None
+        if step_model is not None and step_model != self.default_options.model:
+            original_model = shared_client.options.model
+            await shared_client.set_model(step_model)
+
+        try:
+            if is_streaming:
+                async for event in shared_client.query_streamed(prompt, session_id=session_id):
+                    yield event
+            else:
+                events = await shared_client.query_and_receive_response(prompt, session_id=session_id)
+                for event in events:
+                    yield event
+        finally:
+            if original_model is not None:
+                await shared_client.set_model(original_model)
 
     async def _run_llm_generator_step(
         self,
@@ -241,6 +269,7 @@ class GlyphWorkflow:
         session_id: str,
         shared_client: GlyphClient,
         step_model: str | None,
+        is_streaming: bool,
     ) -> AgentQueryCompleted:
         parameters = inspect.signature(func_to_exec).parameters
         call_args: tuple[Any, ...]
@@ -260,6 +289,32 @@ class GlyphWorkflow:
                 session_id=session_id,
                 shared_client=shared_client,
                 step_model=step_model,
+            )
+
+        if is_streaming:
+            completion: AgentQueryCompleted | None = None
+            async for event in self._iter_llm_events(
+                prompt=self.prompt,
+                session_id=session_id,
+                shared_client=shared_client,
+                step_model=step_model,
+                is_streaming=True,
+            ):
+                if isinstance(event, AgentQueryCompleted):
+                    completion = event
+                try:
+                    await generated.asend(event)
+                except StopAsyncIteration:
+                    if completion is not None:
+                        return completion
+                    raise RuntimeError(
+                        "Streaming LLM step generator ended before receiving AgentQueryCompleted."
+                    ) from None
+
+            if completion is None:
+                raise RuntimeError("LLM step did not receive AgentQueryCompleted.")
+            raise RuntimeError(
+                "Streaming LLM step generator must finish after receiving AgentQueryCompleted."
             )
 
         completion = await self._run_llm_query(
