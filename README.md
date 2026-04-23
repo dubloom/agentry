@@ -1,6 +1,12 @@
 ## glyph
 
-Minimal vendor-agnostic async SDK that normalizes Claude Agent SDK and OpenAI Agents SDK output into one event stream.
+Minimal vendor-agnostic async SDK for agents and Markdown workflows.
+
+Write a workflow in Markdown and run it directly:
+
+```bash
+glyph workflow.md
+```
 
 ## Install
 
@@ -11,6 +17,28 @@ pip install -e .
 ```
 
 Requires Python `>=3.10`.
+
+## Markdown Workflow CLI
+
+Glyph can execute a workflow directly from a Markdown file, which makes it easy to ship agent flows without wrapping them in a custom Python entrypoint.
+
+```md
+---
+name: writePostcard
+options:
+  model: gpt-5.4-mini
+---
+
+## Step: draftPostcard
+
+Write a warm postcard from Lisbon in 3 sentences max.
+```
+
+```bash
+glyph workflow.md
+```
+
+The full runnable example lives in `examples/17_workflow_markdown/workflow.md`.
 
 ## Quickstart (`query` helper)
 
@@ -162,7 +190,7 @@ If inference fails, `resolve_backend` raises `ValueError`.
 ## Workflows
 
 `GlyphWorkflow` lets you compose multi-step flows where each step receives the previous step result.
-Define workflow steps with `@step`, and run the class with `MyWorkflow.run(...)`.
+Define workflow steps with `@step`, or put the workflow in Markdown and run it with `glyph workflow.md`.
 
 ```python
 import asyncio
@@ -201,6 +229,9 @@ Workflow notes:
 - Use `self.fill_prompt(...)` to render prompt templates safely while preserving missing placeholders.
 - Use `self.next_step(self.some_step, value)` to jump to another step and provide that step's input explicitly.
 - `GlyphWorkflow.run(options=..., initial_input=..., session_id=...)` supports runtime overrides and first-step input injection.
+- `GlyphWorkflow.from_markdown(path)` and `run_markdown_workflow(path, ...)` load the same linear workflow model from a Markdown file with `## Step:` sections.
+- Install the package and run Markdown workflows directly with `glyph path/to/workflow.md`.
+- The Markdown CLI is the fastest way to package and demo a workflow because the workflow file itself becomes the executable interface.
 
 ## Examples
 
@@ -223,4 +254,5 @@ python examples/13_basic_workflow.py
 python examples/14_workflow_context.py
 python examples/15_workflow_init_override.py
 python examples/16_workflow_streaming.py
+glyph examples/17_workflow_markdown/workflow.md
 ```

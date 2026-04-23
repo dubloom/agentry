@@ -15,6 +15,8 @@ from glyph.options import resolve_backend
 from glyph.query import query
 from glyph.workflow import GlyphWorkflow
 from glyph.workflow import fill_prompt
+from glyph.workflow import load_markdown_workflow
+from glyph.workflow import run_markdown_workflow
 from glyph.workflow import step
 
 
@@ -35,4 +37,6 @@ __all__ = [
     "GlyphWorkflow",
     "step",
     "fill_prompt",
+    "load_markdown_workflow",
+    "run_markdown_workflow",
 ]

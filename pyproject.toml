@@ -35,6 +35,9 @@ dev = [
     "ruff>=0.14.10,<0.15",
 ]
 
+[project.scripts]
+glyph = "glyph.cli:main"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"

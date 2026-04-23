@@ -1,6 +1,7 @@
 """Simple sequential workflow helpers inspired by LlamaIndex workflows."""
 import inspect
 import uuid
+from os import PathLike
 from typing import Any
 from typing import Callable
 from typing import ClassVar
@@ -12,6 +13,8 @@ from glyph.options import AgentOptions
 
 from .decorators import StepDescriptor
 from .decorators import step
+from .markdown import load_markdown_workflow
+from .markdown import run_markdown_workflow
 
 
 class _PromptTemplateValues(dict[str, Any]):
@@ -75,6 +78,11 @@ class GlyphWorkflow:
         if descriptor is None:
             raise TypeError("next_step expects a bound @step method, e.g. self.some_step.")
         raise _NextWorkflowStep(step_func.__name__, value)
+
+    @classmethod
+    def from_markdown(cls, path: str | PathLike[str]) -> type["GlyphWorkflow"]:
+        """Load a workflow class from a Markdown file."""
+        return load_markdown_workflow(path)
 
     @classmethod
     async def run(
@@ -333,4 +341,11 @@ class GlyphWorkflow:
         raise RuntimeError("LLM step generator must yield exactly once.")
 
 
-__all__ = ["GlyphWorkflow", "fill_prompt", "step", "StepDescriptor"]
+__all__ = [
+    "GlyphWorkflow",
+    "fill_prompt",
+    "step",
+    "StepDescriptor",
+    "load_markdown_workflow",
+    "run_markdown_workflow",
+]
