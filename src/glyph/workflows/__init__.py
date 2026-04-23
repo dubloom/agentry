@@ -56,8 +56,9 @@ class GlyphWorkflow:
         session_id: str | None = None,
         initial_input: Any = None,
     ) -> Any:
+        has_llm_steps = any(descriptor.kind == "llm" for descriptor in cls._glyph_step_descriptors)
         resolved_options = options if options is not None else cls.options
-        if resolved_options is None:
+        if has_llm_steps and resolved_options is None:
             raise TypeError(
                 "GlyphWorkflow requires AgentOptions. Set class-level `options` "
                 "or pass `options=AgentOptions(...)` to `run(...)`."
@@ -75,23 +76,35 @@ class GlyphWorkflow:
         if not descriptors:
             return None
 
+        has_llm_steps = any(descriptor.kind == "llm" for descriptor in descriptors)
+
         # Keep context when overriding model per step.
         session_id = str(uuid.uuid4()) if session_id is None else session_id.strip()
         if not session_id:
             raise ValueError("session_id must be a non-empty string.")
 
         result: Any = initial_input
-        async with GlyphClient(self.default_options) as shared_client:
-            for descriptor in descriptors:
-                if descriptor.kind == "llm":
-                    result = await self._run_llm_step(
-                        descriptor=descriptor,
-                        previous_result=result,
-                        session_id=session_id,
-                        shared_client=shared_client,
-                    )
-                else:
-                    result = await self._run_python_step(descriptor, result)
+        shared_client = None
+
+        # we create a client for all the steps to keep context
+        # however a workflow could be python only so if there is no
+        # llm step, we don't create a client
+        if has_llm_steps:
+            async with GlyphClient(self.default_options) as shared_client:
+                for descriptor in descriptors:
+                    if descriptor.kind == "llm":
+                        result = await self._run_llm_step(
+                            descriptor=descriptor,
+                            previous_result=result,
+                            session_id=session_id,
+                            shared_client=shared_client,
+                        )
+                    else:
+                        result = await self._run_python_step(descriptor, result)
+            return result
+
+        for descriptor in descriptors:
+            result = await self._run_python_step(descriptor, result)
         return result
 
     async def _run_python_step(
