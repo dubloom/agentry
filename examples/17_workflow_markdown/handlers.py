@@ -17,6 +17,6 @@ async def save_postcard(previous_result: AgentQueryCompleted):
     output_path.write_text(previous_result.message, encoding="utf-8")
     return {"file_path": str(output_path)}
 
-
 async def main(previous_result: AgentQueryCompleted):
     return await save_postcard(previous_result)
+

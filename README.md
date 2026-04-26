@@ -1,59 +1,96 @@
-## glyph
+# Glyph
 
-Minimal vendor-agnostic async SDK for agents and Markdown workflows.
+Glyph is a vendor-agnostic Python SDK and CLI for building agent workflows with
+OpenAI and Anthropic models.
 
-Write a workflow in Markdown and run it directly:
+It is designed for flows where some steps should stay deterministic and only the
+parts that actually need an LLM should call one.
+
+Glyph has two core use cases:
+- A vendor-agnostic agent SDK
+- A workflow builder that can act like a `SKILL.md` executor
+
+## Why Glyph?
+
+- Stream normalized agent events from a single prompt.
+- Build sequential workflows where each step receives the previous step result.
+- Express workflows in Python or Markdown.
+- Run Markdown workflows directly from the CLI.
+
+## Markdown Workflow Example
+
+This example loads deterministic context in Python, asks the model to draft a
+postcard, then saves the final message to disk:
+
+````markdown
+---
+name: writePostcard
+description: if the user asks for a postcard, follow these steps
+options:
+  model: gpt-5.4-mini
+  reasoning_effort: medium
+  allowed_tools: [Read, Glob, Grep]
+---
+
+## Step: loadTripContext
+
+```python
+return {
+  "city": "Lisbon",
+  "mood": "warm and nostalgic",
+  "memory": "the yellow tram climbing the hill at sunset",
+}
+```
+
+<!-- Each step receives the previous step result automatically. -->
+
+## Step: draftPostcard
+
+<!-- Glyph fills template variables from previous step output. -->
+
+Write a short postcard message from {{ city }}.
+
+The mood should feel {{ mood }}.
+Mention this memory: {{ memory }}.
+Keep it to 3 sentences maximum.
+
+## Step: savePostcard
+
+```python
+from pathlib import Path
+
+output_path = Path(__file__).with_name("postcard.txt")
+output_path.write_text(previous_result.message, encoding="utf-8")
+return {"file_path": str(output_path)}
+```
+
+returns:
+  file_path: str
+````
+
+
+Run the workflow with:
 
 ```bash
 glyph workflow.md
 ```
+
+Glyph is vendor-agnostic: change `options.model` and Glyph will infer the
+backend from the model name.
 
 ## Install
 
 ```bash
-pip install glyph-agents
-# or for local development
-pip install -e .
+pip install glyph-agents  # install in a virtualenv if you want the SDK
+pipx install glyph-agents  # install only the glyph CLI
 ```
 
 Requires Python `>=3.10`.
 
-## Markdown Workflow CLI
 
-Glyph can execute a workflow directly from a Markdown file, which makes it easy to ship agent flows without wrapping them in a custom Python entrypoint.
+## Glyph Python SDK
 
-```md
----
-name: writePostcard
-options:
-  model: gpt-5.4-mini
----
-
-## Step: draftPostcard
-
-Write a warm postcard from Lisbon in 3 sentences max.
-```
-
-Execute steps can also be inferred from standalone Python fences, so you can keep everything in one `workflow.md`:
-
-````md
-## Step: loadTripContext
-
-```python
-return {"city": "Lisbon"}
-```
-
-returns:
-  city: str
-````
-
-```bash
-glyph workflow.md
-```
-
-The full runnable examples live in `examples/17_workflow_markdown/workflow.md` and `examples/18_workflow_mardown_python/workflow.md`.
-
-## Quickstart (`query` helper)
+### Quickstart (`query` helper)
 
 ```python
 import asyncio
@@ -83,7 +120,7 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-## Streaming with `GlyphClient`
+### Streaming with `GlyphClient`
 
 Use `GlyphClient` when you want explicit control of turn lifecycle methods:
 
@@ -115,7 +152,7 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-## Event Types
+### Event Types
 
 All APIs stream normalized `AgentEvent` values:
 
@@ -127,7 +164,7 @@ All APIs stream normalized `AgentEvent` values:
 
 Backend failures are surfaced as `AgentQueryCompleted(is_error=True, ...)`.
 
-## `AgentOptions`
+### `AgentOptions`
 
 `AgentOptions` is the shared configuration surface:
 
@@ -150,7 +187,7 @@ Backend failures are surfaced as `AgentQueryCompleted(is_error=True, ...)`.
 - `bash_timeout_ms`: OpenAI Bash tool default timeout override
 - `reasoning_effort` / `reasoning_summary`: OpenAI-only reasoning controls
 
-## Approval Handlers (edit vs execute)
+### Approval Handlers (edit vs execute)
 
 When permissions are set to `ask`, Glyph can call capability-specific approval handlers:
 
@@ -187,24 +224,11 @@ options = AgentOptions(
 )
 ```
 
-## Backend Resolution
+### Workflows
 
-`resolve_backend(options)` infers backend from `model`:
-
-- Claude if model contains `claude` or `anthropic`
-- OpenAI if model starts with `gpt-`, `o1`, `o3`, `o4`, or `chatgpt`
-
-If inference fails, `resolve_backend` raises `ValueError`.
-
-## Prompt Input Shape
-
-- Claude backend accepts `str` or async iterable prompt blocks (Claude-compatible content blocks).
-- OpenAI backend currently supports `str` prompts only.
-
-## Workflows
-
-`GlyphWorkflow` lets you compose multi-step flows where each step receives the previous step result.
-Define workflow steps with `@step`, or put the workflow in Markdown and run it with `glyph workflow.md`.
+`GlyphWorkflow` lets you compose multi-step flows where each step receives the
+previous step result. Define steps with `@step`, or put the workflow in Markdown
+and run it with `glyph workflow.md`.
 
 ```python
 import asyncio
@@ -244,6 +268,9 @@ Workflow notes:
 - Use `self.next_step(self.some_step, value)` to jump to another step and provide that step's input explicitly.
 - `GlyphWorkflow.run(options=..., initial_input=..., session_id=...)` supports runtime overrides and first-step input injection.
 - `GlyphWorkflow.from_markdown(path)` and `run_markdown_workflow(path, ...)` load the same linear workflow model from a Markdown file with `## Step:` sections.
+- In Markdown workflows, the first declared `## Step:` section is the entrypoint.
+- A Markdown step can be an LLM prompt, an inline Python block, or an `execute:` mapping that points to a file and optional function.
+- Markdown comments like `<!-- ... -->` are ignored by the workflow loader.
 - Install the package and run Markdown workflows directly with `glyph path/to/workflow.md`.
 - The Markdown CLI is the fastest way to package and demo a workflow because the workflow file itself becomes the executable interface.
 
@@ -269,4 +296,5 @@ python examples/14_workflow_context.py
 python examples/15_workflow_init_override.py
 python examples/16_workflow_streaming.py
 glyph examples/17_workflow_markdown/workflow.md
+glyph examples/18_workflow_mardown_python/workflow.md
 ```

@@ -26,7 +26,7 @@ Keep it to 3 sentences maximum.
 ## Step: savePostcard
 
 execute:
-  file: handlers.py
+  file: handlers.py <!-- Default to main() function -->
 
 <!-- This is non necessary but it helps understand what a step will return. -->
 returns:
