@@ -101,27 +101,6 @@ def _tool_call_completed(item: ToolCallOutputItem) -> AgentToolResult:
     )
 
 
-def _openai_tool_guidance_instructions() -> str:
-    return (
-        "Use glob_files and grep_files to locate content, then read_file with offset/limit to inspect targeted ranges. "
-        "To create, update, or delete files, use the apply_patch tool only. "
-        "Never claim files were changed unless apply_patch succeeded. "
-        "Prefer minimal, correct patches."
-    )
-
-def _merge_openai_instructions(options: AgentOptions, tools_enabled: bool) -> str:
-    user_instructions = (options.instructions or "").strip()
-    if not tools_enabled:
-        return user_instructions
-
-    sections: list[str] = []
-    sections.append(_openai_tool_guidance_instructions())
-    if user_instructions:
-        # Put caller-provided instructions last so they can refine default guidance.
-        sections.append(user_instructions)
-    return "\n\n".join(sections)
-
-
 def _openai_stop_reason(context_wrapper: Any) -> str:
     """Best-effort stop reason for OpenAI runs."""
     for attr_name in ("stop_reason", "finish_reason", "status"):
@@ -186,8 +165,7 @@ class OpenAIBackend:
             bash_timeout_ms=options.bash_timeout_ms,
         )
 
-        tools_enabled = bool(tools)
-        instructions = _merge_openai_instructions(options, tools_enabled)
+        instructions = (options.instructions or "").strip()
 
         agent_kw: dict[str, Any] = {
             "name": options.name,
