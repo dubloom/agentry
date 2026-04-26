@@ -17,8 +17,8 @@ async def test_run_cli_executes_markdown_workflow(
 ) -> None:
     called_with: list[Path] = []
 
-    async def fake_run_markdown_workflow(path: Path) -> dict[str, str]:
-        called_with.append(path)
+    async def fake_run_markdown_workflow(path: Path, **kwargs: object) -> dict[str, str]:
+        called_with.append((path, kwargs))
         return {"file_path": "postcard.txt"}
 
     monkeypatch.setattr(glyph.cli, "run_markdown_workflow", fake_run_markdown_workflow)
@@ -26,8 +26,46 @@ async def test_run_cli_executes_markdown_workflow(
     exit_code = await glyph.cli.run_cli(["workflow.md"])
 
     assert exit_code == 0
-    assert called_with == [Path("workflow.md")]
+    assert called_with == [(Path("workflow.md"), {"initial_input": None})]
     assert capsys.readouterr().out.strip() == json.dumps({"file_path": "postcard.txt"})
+
+
+@pytest.mark.asyncio
+async def test_run_cli_passes_initial_input_json(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    captured: dict[str, object] = {}
+
+    async def fake_run_markdown_workflow(path: Path, **kwargs: object) -> str:
+        captured["path"] = path
+        captured.update(kwargs)
+        return "ok"
+
+    monkeypatch.setattr(glyph.cli, "run_markdown_workflow", fake_run_markdown_workflow)
+
+    exit_code = await glyph.cli.run_cli(["workflow.md", "-i", '{"query": "x"}'])
+
+    assert exit_code == 0
+    assert captured == {"path": Path("workflow.md"), "initial_input": {"query": "x"}}
+    assert capsys.readouterr().out.strip() == "ok"
+
+
+@pytest.mark.asyncio
+async def test_run_cli_rejects_invalid_initial_input_json(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    async def should_not_run(*args: object, **kwargs: object) -> None:
+        raise AssertionError("run_markdown_workflow should not run with invalid JSON")
+
+    monkeypatch.setattr(glyph.cli, "run_markdown_workflow", should_not_run)
+
+    with pytest.raises(SystemExit):
+        await glyph.cli.run_cli(["workflow.md", "--initial-input", "not-json"])
+
+    err = capsys.readouterr().err
+    assert "invalid JSON" in err
 
 
 def test_cli_main_runs_real_markdown_bash_workflow(tmp_path: Path) -> None:
