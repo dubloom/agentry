@@ -17,7 +17,10 @@ async def _stream_text(client: GlyphClient, prompt: str, session_id: str) -> str
 
 
 @pytest.mark.asyncio
-async def test_session_remembers_within_session_id() -> None:
+async def test_session_remembers_within_session_id(request: pytest.FixtureRequest) -> None:
+    if request.config.getoption("anthropic"):
+        pytest.skip("Skipped when running SDK tests with --anthropic.")
+
     options = AgentOptions(model=os.environ.get("GLYPH_MODEL"))
     session_a = str(uuid.uuid4())
     session_b = str(uuid.uuid4())
