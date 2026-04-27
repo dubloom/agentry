@@ -10,6 +10,16 @@ Glyph has two core use cases:
 - A vendor-agnostic agent SDK
 - A workflow builder that can act like a `SKILL.md` executor
 
+## Table of contents
+
+- [Markdown Worfklow Example](#markdown-workflow-example)
+- [Glyph Python SDK](#glyph-python-sdk)
+    - [Quickstart](#quickstart-query-helper)
+    - [Streaming with GlyphClient](#streaming-with-glyphclient)
+    - [Agent Options](#agentoptions)
+- [Workflows](#workflows)
+- [Examples](#examples)
+
 ## Markdown Workflow Example
 
 This example demonstrates how Glyph can execute workflows described entirely in Markdown.
@@ -229,7 +239,7 @@ options = AgentOptions(
 )
 ```
 
-### Workflows
+## Workflows
 
 `GlyphWorkflow` lets you compose multi-step flows where each step receives the
 previous step result. Define steps with `@step`, or put the workflow in Markdown
@@ -264,7 +274,7 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-#### Python workflows (`@step`)
+### Python workflows (`@step`)
 
 - `@step` — plain Python step.
 - `@step(prompt=..., model=..., is_streaming=...)` — LLM step; `model` overrides the workflow default for that step only.
@@ -274,7 +284,7 @@ if __name__ == "__main__":
 - `self.stop_workflow(value)` — end the workflow immediately; `GlyphWorkflow.run(...)` returns `value`.
 - `GlyphWorkflow.run(options=..., initial_input=..., session_id=...)` — runtime overrides and optional first-step input.
 
-#### Markdown workflows (`## Step:`)
+### Markdown workflows (`## Step:`)
 
 - `GlyphWorkflow.from_markdown(path)` and `run_markdown_workflow(path, ...)` load a linear workflow from `## Step:` sections.
 - The first `## Step:` is the entrypoint.
