@@ -12,7 +12,7 @@ from typing import Sequence
 
 from glyph.cli_registry import GlyphRegistryError
 from glyph.cli_registry import add_glyph
-from glyph.cli_registry import list_registered_glyphs
+from glyph.cli_registry import list_available_glyphs
 from glyph.cli_registry import remove_glyph
 from glyph.cli_registry import resolve_glyph
 from glyph.messages import AgentQueryCompleted
@@ -22,7 +22,7 @@ from glyph.workflow import run_markdown_workflow
 _HELP_FORMATTER = argparse.RawDescriptionHelpFormatter
 
 _DIRECT_RUN_EPILOG = """
-Named workflows (stored in ~/.glyph/glyphs.json):
+Global registry commands:
   glyph add NAME PATH       Register PATH under NAME
   glyph run NAME            Run the workflow registered as NAME
   glyph list                List registered names and paths
@@ -141,10 +141,11 @@ async def run_cli(argv: Sequence[str] | None = None) -> int:
             return 0
 
         if command == "list":
-            glyphs = list_registered_glyphs()
+            glyphs = list_available_glyphs()
             if not glyphs:
                 print("No glyphs registered yet.\n")
                 print("Add one with:  glyph add <name> path/to/workflow.md")
+                print("Or create local glyphs in:  ./.glyph/glyphs/<name>.md")
                 return 0
             _print_registered_glyphs(glyphs)
             return 0
