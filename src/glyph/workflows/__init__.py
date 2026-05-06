@@ -7,6 +7,7 @@ from typing import ClassVar
 import uuid
 
 from glyph.client import GlyphClient
+from glyph.credentials import bootstrap_provider_api_keys
 from glyph.messages import AgentQueryCompleted
 from glyph.options import AgentOptions
 
@@ -110,6 +111,8 @@ class GlyphWorkflow:
         descriptors = self._step_descriptors
         if not descriptors:
             return None
+
+        bootstrap_provider_api_keys()
 
         has_llm_steps = any(descriptor.kind == "llm" for descriptor in descriptors)
         step_indexes = {descriptor.func.__name__: index for index, descriptor in enumerate(descriptors)}

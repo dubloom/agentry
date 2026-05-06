@@ -13,6 +13,7 @@ Glyph has two core use cases:
 ## Table of contents
 
 - [Markdown Worfklow Example](#markdown-workflow-example)
+- [Provider API keys](#provider-api-keys)
 - [Glyph Python SDK](#glyph-python-sdk)
     - [Quickstart](#quickstart-query-helper)
     - [Streaming with GlyphClient](#streaming-with-glyphclient)
@@ -137,6 +138,17 @@ pipx install glyph-agents  # install only the glyph CLI
 ```
 
 Requires Python `>=3.10`.
+
+## Provider API keys
+
+Glyph reads `OPENAI_API_KEY` and `ANTHROPIC_API_KEY` the same way the vendor SDKs
+do: primarily from your process environment.
+
+To persist keys and not having to export them in every new shell, run:
+
+```bash
+glyph auth
+```
 
 
 ## Glyph Python SDK

@@ -15,6 +15,7 @@ from glyph.cli_registry import add_glyph
 from glyph.cli_registry import list_available_glyphs
 from glyph.cli_registry import remove_glyph
 from glyph.cli_registry import resolve_glyph
+from glyph.credentials import interactive_configure_provider_keys
 from glyph.messages import AgentQueryCompleted
 from glyph.workflow import run_markdown_workflow
 
@@ -27,6 +28,7 @@ Global registry commands:
   glyph run NAME            Run the workflow registered as NAME
   glyph list                List registered names and paths
   glyph remove NAME         Unregister NAME
+  glyph auth                Store provider API keys in the OS keyring
 
 For options on a command:  glyph COMMAND -h
 """.strip()
@@ -81,6 +83,11 @@ def _build_command_parser() -> argparse.ArgumentParser:
 
     subparsers.add_parser("list", help="List registered glyph names and workflow paths.")
 
+    subparsers.add_parser(
+        "auth",
+        help="Prompt for OPENAI_API_KEY and ANTHROPIC_API_KEY and save non-empty values to the keyring.",
+    )
+
     return parser
 
 
@@ -123,7 +130,7 @@ async def run_cli(argv: Sequence[str] | None = None) -> int:
     dispatch_argv = list(argv) if argv is not None else sys.argv[1:]
     parser = (
         _build_command_parser()
-        if dispatch_argv and dispatch_argv[0] in {"add", "list", "remove", "run"}
+        if dispatch_argv and dispatch_argv[0] in {"add", "auth", "list", "remove", "run"}
         else build_parser()
     )
     args = parser.parse_args(list(argv) if argv is not None else None)
@@ -133,6 +140,10 @@ async def run_cli(argv: Sequence[str] | None = None) -> int:
         if command == "add":
             registered_path = add_glyph(args.name, args.workflow)
             print(f"Registered glyph '{args.name}' -> {registered_path}")
+            return 0
+
+        if command == "auth":
+            interactive_configure_provider_keys()
             return 0
 
         if command == "remove":

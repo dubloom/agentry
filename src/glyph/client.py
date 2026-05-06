@@ -5,6 +5,7 @@ from typing import Any
 
 from glyph.backends.claude import ClaudeBackend
 from glyph.backends.openai import OpenAIBackend
+from glyph.credentials import bootstrap_provider_api_keys
 from glyph.messages import AgentEvent
 from glyph.options import AgentOptions
 from glyph.options import resolve_backend
@@ -14,6 +15,7 @@ class GlyphClient:
     """Vendor-agnostic client with Claude-style ``query`` / ``receive_response`` flow."""
 
     def __init__(self, options: AgentOptions | None = None) -> None:
+        bootstrap_provider_api_keys()
         if options is None:
             raise TypeError("Client requires AgentOptions.")
         self.backend_name = resolve_backend(options)
