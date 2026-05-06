@@ -24,8 +24,9 @@ classifiers = [
 license = "Apache-2.0"
 license-files = ["LICEN[CS]E*"]
 dependencies = [
-    "claude-agent-sdk",
-    "openai-agents",
+    "claude-agent-sdk==0.1.61",
+    "keyring>=25",
+    "openai-agents==0.14.1",
     "pyyaml",
 ]
 
